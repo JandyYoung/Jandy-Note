@@ -1,2 +1,2 @@
-# Jandy-s-Note
-the Jandy Young's Git Note
+# Jandy's Note
+Jandy Young's Note, Notes, online materials, etc.
