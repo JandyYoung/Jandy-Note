@@ -96,7 +96,6 @@ i == j.
 ```
 
 `const` 可以修饰函数中的形参和函数的返回值，如 `const int fun(const int i);`
-13. 
 
 
 
