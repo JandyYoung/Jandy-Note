@@ -25,7 +25,7 @@
 
 rt-thread提供了完善的设备框架，其真正的运行原理还需要对其进行分析。
 
-## rt_pin_mode
+## IO设备驱动
 
 线程执行的第一步便是对引脚的工作模式定义，其中 `rt_pin_mode` 的源码如下：
 
@@ -94,7 +94,35 @@ rt-thread提供了完善的设备框架，其真正的运行原理还需要对�
 
 上述API也是 `_hw_pin.ops` 的本质。
 
+`stm32_pin_mode` ：通过 `get_pin` API 获得 GPIO 设备，配置该引脚参数用 `HAL_GPIO_Init` 进行初始化。
+`stm32_pin_write`：通过 `get_pin` API 获得 GPIO 设备，用 `HAL_GPIO_WritePin` 向该引脚写入输出电平值，电平值在 `pin.h` 中定义了低电平：`PIN_LOW` 和高电平：`PIN_HIGH`。
+`stm32_pin_read`：通过 `get_pin` API 获得 GPIO 设备，使用 `HAL_GPIO_ReadPin` 读出引脚电平值并返回。
+`stm32_pin_attach_irq`：设置 `pin_irq_hdr_tab` 中的元素，即设置 GPIO 引脚中断。
+`stm32_pin_dettach_irq`：删除 `pin_irq_hdr_tab` 中的元素，即删除 GPIO 引脚中断。
+`stm32_pin_irq_enable`：使能 `PIN_IRQ_ENABLE` 或者禁能 `PIN_IRQ_DISABLE` GPIO 引脚中断
 
+上述 API 运行中第一步都是使用了 `get_pin` 来获取 GPIO 设备，该 API 的输入参数 `uint8_t pin` 在 `drv_gpio.h`  中定义。GPIO 设备在 `pin_index` 的结构体中定义，该结构体如下所示：
+
+```
+struct pin_index
+{
+    int index;
+    void (*rcc)(void);
+    GPIO_TypeDef *gpio;
+    uint32_t pin;
+};
+```
+
+获取 GPIO 设备的即调用由 `const struct pin_index` 修饰的数组 `pins[]` 中的元素，数组元素结构定义如下所示（关于##的使用在附录中说明）：
+
+```
+#define __STM32_PIN(index, gpio, gpio_index) \
+{ \
+  index, GPIO##gpio##_CLK_ENABLE, GPIO##gpio,  GPIO_PIN_##gpio_index \
+}
+```
+
+上述定义也正好与 `pin_index` 结构体中的元素一一对应。
 
 ## 附录
 对于代码的注释最常用的为 **”//“**  和 **”/*... */“**，在 RTThread 中使用了如下注释方法：
@@ -114,3 +142,7 @@ rt-thread提供了完善的设备框架，其真正的运行原理还需要对�
 ```
 
 而上述方法也是一种很好的注释方法，因为 **”//“** 的注释会显得凌乱，而 **”/*... */“** 不支持嵌套。
+
+`##` ：连接实际参数的手段，替换文本中的参数，即将两个宏参数贴合在一起。
+
+文中 `__STM32_PIN(1, E, 2)`  通过宏定义得到的为 `{1, GPIOE_CLK_ENABLE, GPIO_PIN_2}`。
